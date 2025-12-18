@@ -1,0 +1,18 @@
+# configs/synthetic/grid.yaml
+n_students: [50, 100, 150]
+n_skills: [5, 10, 15]
+smoothing: [0.1, 0.3, 0.5]
+
+current_alpha_beta:
+  - [2.5, 2.5]
+  - [2.5, 5.0]
+  - [5.0, 2.5]
+  - [2.5, 10.0]
+  - [10.0, 2.5]
+
+future_alpha_beta:
+  - [2.5, 2.5]
+  - [2.5, 5.0]
+  - [5.0, 2.5]
+  - [2.5, 10.0]
+  - [10.0, 2.5]
