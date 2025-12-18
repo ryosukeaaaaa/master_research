@@ -21,11 +21,9 @@ def build_dataset(method_cfg, current_dataset, future_dataset, device):
             "y_val": y_val,
             }
     elif method_cfg["dataset_id"] == "current_data":
-        X_train = torch.tensor(current_dataset[:, 0, :], device=device)
-        y_train = torch.tensor(current_dataset[:, 1, :], device=device)
+        current_data = torch.tensor(current_dataset[:, 1, :], device=device) # 現在の状態のみ
         train_data = {
-            "X_train": X_train,
-            "y_train": y_train,
+            "current_data": current_data,
             }
     else:
         raise ValueError(f"Unknown dataset_id: {method_cfg['dataset_id']}")

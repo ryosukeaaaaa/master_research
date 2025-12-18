@@ -24,9 +24,9 @@ class PopularityMethod(BaseMethod):
 
     def fit(self, train_data: Dict[str, Any]) -> None:
         """
-        train_data["X_train"]: (n_students, n_skills)
+        train_data["current_data"]: (n_students, n_skills)
         """
-        X = train_data["X_train"]
+        X = train_data["current_data"]
 
         if isinstance(X, torch.Tensor):
             X = X.detach().cpu().numpy() if isinstance(X, torch.Tensor) else X
