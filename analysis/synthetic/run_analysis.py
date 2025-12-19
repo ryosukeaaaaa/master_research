@@ -6,7 +6,7 @@ import pandas as pd
 from pathlib import Path
 
 RESULTS_DIR = "outputs/synthetic/results"
-OUT_DIR = "analysis/results"
+OUT_DIR = "analysis/synthetic/results"
 
 METRICS = ["kl", "hd", "jsd", "acc", "ace", "spa", "mse"]
 

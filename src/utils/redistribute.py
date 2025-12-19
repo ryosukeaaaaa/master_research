@@ -93,4 +93,7 @@ def redistribute(state: np.ndarray, p: np.ndarray, total: int) -> np.ndarray:
 
     # 数値誤差で 1.0+ε などになっていないか最終クリップ
     np.clip(predicted_state, 0.0, 1.0, out=predicted_state)
+
+    if sum(predicted_state - state) > total + EPS:
+        raise RuntimeError("Redistribution exceeded total allocation.")
     return predicted_state

@@ -89,6 +89,7 @@ def main():
                     A=A,
                     model=method,
                     metrics=dist_metrics,
+                    smoothing=exp_cfg["smoothing"],
                 )
                 scores_testdata = evaluate_testdata(
                     pred=out,
