@@ -22,9 +22,16 @@ class ModelManager:
     def get_save_path(self, exp_cfg, method_name, seed):
         """保存パスを生成"""
         config_str = f"{exp_cfg['n_students']}_{exp_cfg['n_skills']}"
-        config_str += f"_{exp_cfg['smoothing']}_{exp_cfg["current_alpha_beta"][0]}"
-        config_str += f"_{exp_cfg["current_alpha_beta"][1]}_{exp_cfg["future_alpha_beta"][0]}"
-        config_str += f"_{exp_cfg["future_alpha_beta"][1]}_{method_name}_{seed}"
+        
+        # オプションパラメータを追加（存在する場合のみ）
+        if 'smoothing' in exp_cfg:
+            config_str += f"_{exp_cfg['smoothing']}"
+        if 'current_alpha_beta' in exp_cfg:
+            config_str += f"_{exp_cfg['current_alpha_beta'][0]}_{exp_cfg['current_alpha_beta'][1]}"
+        if 'future_alpha_beta' in exp_cfg:
+            config_str += f"_{exp_cfg['future_alpha_beta'][0]}_{exp_cfg['future_alpha_beta'][1]}"
+        
+        config_str += f"_{method_name}_{seed}"
         return Path(self.config.save_folder) / f"{config_str}.pt"
     
     def save_model(self, model, save_path, epoch, loss):

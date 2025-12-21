@@ -139,18 +139,21 @@ class SkillSetSelector:
         
         return selected
     
-    def strategy_cooccurrence(self, K: int, min_users: int = 500) -> Tuple[List[float], int]:
+    def strategy_cooccurrence(self, K: int, min_users: int = 500, 
+                            require_temporal_coverage: bool = True) -> Tuple[List[float], int]:
         """
         Strategy B: Greedy selection to maximize number of valid users.
         
-        A user is valid if they cover all selected skills in both halves.
+        A user is valid if they cover all selected skills in both first AND second halves.
         
         Args:
             K: Number of skills to select
             min_users: Minimum number of users for candidate skills
+            require_temporal_coverage: If True, ensures users have all skills in BOTH halves
+                                      If False, only requires coverage across full timeline
         
         Returns:
-            Tuple of (selected skill IDs, number of valid users)
+            Tuple of (selected skill IDs, number of valid users with temporal coverage)
         """
         # Ensure coverage matrix is computed
         if self.df_split is None:
@@ -158,9 +161,23 @@ class SkillSetSelector:
         if self.coverage_matrix is None:
             self.compute_dual_coverage()
         
-        # Get candidate skills
-        skill_counts = self.df.groupby('skill_id')['user_id'].nunique()
-        candidates = skill_counts[skill_counts >= min_users].index.tolist()
+        # Get candidate skills - filter by dual coverage
+        if require_temporal_coverage:
+            # Only consider skills that many users solve in both halves
+            skill_dual_counts = {}
+            for skill in self.df_split['skill_id'].unique():
+                dual_count = sum(1 for user_skills in self.coverage_matrix.values()
+                               if skill in user_skills)
+                skill_dual_counts[skill] = dual_count
+            
+            candidates = [s for s, count in skill_dual_counts.items() if count >= min_users]
+            
+            if self.verbose:
+                print(f"  Found {len(candidates)} skills with dual coverage >= {min_users} users")
+        else:
+            # Original behavior: any skill with enough total users
+            skill_counts = self.df.groupby('skill_id')['user_id'].nunique()
+            candidates = skill_counts[skill_counts >= min_users].index.tolist()
         
         if len(candidates) < K:
             print(f"Warning: Only {len(candidates)} skills meet min_users={min_users}")
@@ -169,7 +186,8 @@ class SkillSetSelector:
         selected_skills = []
         
         if self.verbose:
-            print(f"\nStrategy B (Co-occurrence): Greedy selection for K={K}")
+            mode = "with temporal coverage" if require_temporal_coverage else "total timeline"
+            print(f"\nStrategy B (Co-occurrence {mode}): Greedy selection for K={K}")
         
         for i in range(K):
             best_skill = None
@@ -180,6 +198,7 @@ class SkillSetSelector:
                     continue
                 
                 # Count valid users if we add this skill
+                # Valid = users who have ALL selected skills in BOTH halves
                 temp_selected = set(selected_skills + [skill])
                 valid_count = sum(1 for user_skills in self.coverage_matrix.values()
                                  if temp_selected.issubset(user_skills))
@@ -195,11 +214,14 @@ class SkillSetSelector:
             selected_skills.append(best_skill)
             
             if self.verbose:
-                print(f"  Step {i+1}: Skill {best_skill} -> {best_count} valid users")
+                print(f"  Step {i+1}: Skill {best_skill} -> {best_count} valid users (both halves)")
         
-        # Final count
+        # Final count - users with all skills in both halves
         final_valid = sum(1 for user_skills in self.coverage_matrix.values()
                          if set(selected_skills).issubset(user_skills))
+        
+        if self.verbose:
+            print(f"\n  Final: {final_valid} users have all {len(selected_skills)} skills in BOTH halves")
         
         return selected_skills, final_valid
     

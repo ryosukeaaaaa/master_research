@@ -23,7 +23,7 @@ def evaluate_testdata(pred, input, target, metrics):
     return scores
 
 
-def evaluate_distribution(A, model, metrics, smoothing=1e-6):
+def evaluate_distribution(A, model, metrics, smoothing):
     """
     遷移分布レベルの評価（状態到達確率で重み付け）
 

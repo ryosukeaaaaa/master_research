@@ -1,0 +1,15 @@
+recipe:
+  optimizer: adam
+  optimizer_params:
+    lr: 0.01
+  loss: mse
+  epochs: 2000
+  early_stopping: 10
+  regularization:
+    type: L1
+    lambda: 0.001
+
+training_cfg:
+  save_folder: outputs/assistments_2009_2010/models/
+  save_best_only: true
+  checkpoint_freq: 100
