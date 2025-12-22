@@ -7,7 +7,7 @@ recipe:
   early_stopping: 10
   regularization:
     type: L1
-    lambda: 0.001
+    lambda: 0.01
 
 training_cfg:
   save_folder: outputs/assistments_2009_2010/models/

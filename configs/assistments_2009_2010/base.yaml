@@ -12,19 +12,19 @@ dataset:
     id: "outputs/assistments_2009_2010/dina_estimation/min150_k10"
     n_skills: 10
 
-split_ratio: 0.7
+split_ratio: 0.8
 
 # --- 手法（NN/ルール を全部ここへ） ---
 methods:
   # proposed を current_data で学習
   - id: proposed
     dataset_id: current_data
-    split_ratio: 0.7
+    split_ratio: 0.8
 
   # “full-information” は同じモデルでもOK。違いは dataset_id だけ。
   - id: full_information
     dataset_id: full_information_data
-    split_ratio: 0.7
+    split_ratio: 0.8
 
   # ルールベースは学習不要 or 軽いfit
   - id: popularity

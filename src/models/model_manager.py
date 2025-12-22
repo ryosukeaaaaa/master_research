@@ -19,7 +19,8 @@ class ModelManager:
         self.config = cfg
         Path(cfg.save_folder).mkdir(parents=True, exist_ok=True)
     
-    def get_save_path(self, exp_cfg, method_name, seed):
+    # src/models/model_manager.py の修正
+    def get_save_path(self, exp_cfg, method_name, seed, recipe=None):
         """保存パスを生成"""
         config_str = f"{exp_cfg['n_students']}_{exp_cfg['n_skills']}"
         
@@ -30,7 +31,9 @@ class ModelManager:
             config_str += f"_{exp_cfg['current_alpha_beta'][0]}_{exp_cfg['current_alpha_beta'][1]}"
         if 'future_alpha_beta' in exp_cfg:
             config_str += f"_{exp_cfg['future_alpha_beta'][0]}_{exp_cfg['future_alpha_beta'][1]}"
-        
+        if recipe and 'regularization' in recipe:
+            reg = recipe['regularization']
+            config_str += f"_{reg['type']}_{reg['lambda']}"
         config_str += f"_{method_name}_{seed}"
         return Path(self.config.save_folder) / f"{config_str}.pt"
     

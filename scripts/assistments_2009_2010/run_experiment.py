@@ -20,8 +20,8 @@ def main():
 
     device = get_device()
 
-    records = []
     for dataset_cfg in base_cfg["dataset"]:
+        records = []  # データセットごとに初期化
         pre_current_dataset, pre_future_dataset = generate_data(data_dir=dataset_cfg["id"], n_skills=dataset_cfg["n_skills"])
         split_ratio = base_cfg["split_ratio"]
         print("あああああ")
@@ -104,7 +104,7 @@ def main():
 
         df = pd.DataFrame(records)
         exp_name = dataset_cfg["name"]
-        csv_path = results_dir / f"{exp_name}.csv"
+        csv_path = results_dir / f"{exp_name}_{train_cfg['recipe']['regularization']['type']}_{train_cfg['recipe']['regularization']['lambda']}.csv"
 
         df.to_csv(csv_path, index=False)
 

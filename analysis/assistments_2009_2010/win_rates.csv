@@ -1,0 +1,9 @@
+dataset,baseline,n_trials,acc_wins,acc_win_rate,spa_wins,spa_win_rate,ace_wins,ace_win_rate,mse_wins,mse_win_rate
+k5,full_information,100,16,0.16,14,0.14,13,0.13,9,0.09
+k5,popularity,100,37,0.37,46,0.46,35,0.35,32,0.32
+k5,simple_markov,100,24,0.24,21,0.21,79,0.79,49,0.49
+k5,random,100,45,0.45,47,0.47,35,0.35,24,0.24
+k10,full_information,100,0,0.0,0,0.0,0,0.0,0,0.0
+k10,popularity,100,73,0.73,47,0.47,34,0.34,23,0.23
+k10,simple_markov,100,17,0.17,23,0.23,62,0.62,47,0.47
+k10,random,100,14,0.14,4,0.04,0,0.0,0,0.0

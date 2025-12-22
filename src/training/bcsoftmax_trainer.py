@@ -83,7 +83,7 @@ def fit_bcsoftmax_model(
         checkpoint_freq=int(training_cfg.get("checkpoint_freq", 100)),
     ))
 
-    save_path = mm.get_save_path(exp_cfg, method_name, seed)
+    save_path = mm.get_save_path(exp_cfg, method_name, seed, recipe)
 
     # 既存モデルがあればスキップ（あなたの挙動を維持）
     if mm.load_model_if_exists(save_path, model):
