@@ -7,7 +7,8 @@ from typing import Tuple
 
 def generate_data(
     data_dir: str,
-    n_skills: int
+    n_skills: int,
+    raw_future: bool = False
 ) -> Tuple[np.ndarray, np.ndarray]:
     """
     ASSISTments 2009-2010データセットから研究用データを生成する。
@@ -125,6 +126,11 @@ def generate_data(
     print(f"  平均純増: {(second_mastered - first_mastered).mean():.2f}")
     print(f"  平均純増（元）: {(second_mastered_original - first_mastered).mean():.2f}")
     
+    if raw_future:
+        # future_datasetを元の後半データに置き換え
+        future_dataset = np.stack([first_states, second_states], axis=1)
+        print("\n⚠️  future_datasetを元の後半データで生成しました（raw_future=True）")
+
     return current_dataset, future_dataset
 
 

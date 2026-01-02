@@ -13,6 +13,7 @@ import pandas as pd
 import numpy as np
 from pathlib import Path
 from scipy.stats import wilcoxon
+import argparse
 
 # 指標の向き（大きい方が良いか、小さい方が良いか）
 HIGHER_IS_BETTER = {
@@ -221,9 +222,31 @@ def wilcoxon_test(df: pd.DataFrame, metrics: list, dataset_name: str, proposed_m
 
 def main():
     """メイン処理"""
+    # コマンドライン引数のパース
+    parser = argparse.ArgumentParser(description='ASSISTments 2009-2010 実験結果の分析')
+    parser.add_argument(
+        '--reg-type',
+        type=str,
+        default='L1',
+        help='正則化の種類 (例: L1, L2, None)'
+    )
+    parser.add_argument(
+        '--reg-lambda',
+        type=float,
+        default=1.0,
+        help='正則化のλ値 (例: 0.001, 0.01, 0.1)'
+    )
+    args = parser.parse_args()
+    
+    # 正則化パラメータに基づいてディレクトリ名を構築
+    if args.reg_type.lower() in ['none', 'null']:
+        reg_suffix = "no_reg"
+    else:
+        reg_suffix = f"{args.reg_type}_{args.reg_lambda}"
+    
     # 結果ディレクトリ
-    results_dir = "outputs/assistments_2009_2010/results"
-    output_dir = Path("analysis/assistments_2009_2010")
+    results_dir = f"outputs/assistments_2009_2010/results_{reg_suffix}"
+    output_dir = Path(f"analysis/assistments_2009_2010/{reg_suffix}")
     output_dir.mkdir(parents=True, exist_ok=True)
     
     # 評価指標
@@ -231,14 +254,22 @@ def main():
     
     print("="*80)
     print("ASSISTments 2009-2010 実験結果の分析")
+    print(f"正則化: {args.reg_type}, λ={args.reg_lambda}")
+    print(f"結果ディレクトリ: {results_dir}")
+    print(f"出力ディレクトリ: {output_dir}")
     print("="*80)
     
     # 結果読み込み
     print("\n[1] 結果の読み込み")
-    results_dict = load_results(results_dir)
-    print(f"  データセット数: {len(results_dict)}")
-    for dataset_name, df in results_dict.items():
-        print(f"  - {dataset_name}: {len(df)} records")
+    try:
+        results_dict = load_results(results_dir)
+        print(f"  データセット数: {len(results_dict)}")
+        for dataset_name, df in results_dict.items():
+            print(f"  - {dataset_name}: {len(df)} records")
+    except FileNotFoundError as e:
+        print(f"  エラー: {e}")
+        print(f"  指定されたディレクトリ '{results_dir}' が存在しないか、CSVファイルがありません")
+        return
     
     # 各データセットごとに分析
     all_stats = []

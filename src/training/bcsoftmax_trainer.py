@@ -74,7 +74,8 @@ def fit_bcsoftmax_model(
     device,
     exp_cfg: dict,
     training_cfg: dict,        # epochs, early_stopping, save_folder...
-    recipe: dict               # optimizer/loss/reg...
+    recipe: dict,             # optimizer/loss/reg...
+    save = True,
 ):
     # 保存設定
     mm = ModelManager(ModelConfig(
@@ -112,7 +113,8 @@ def fit_bcsoftmax_model(
         if va < best:
             best = va
             patience = 0
-            mm.save_best_model(model, save_path, epoch, va)
+            if save:
+                mm.save_best_model(model, save_path, epoch, va)
         else:
             patience += 1
 

@@ -24,7 +24,6 @@ valid_users_min{MIN_USERS}_k{K}.csv - 有効ユーザーIDリスト
 ファイル: extract_selected_data.py
 
 入力:
-
 skill_builder_data.csv - 生データ
 outputs/assistments_2009_2010/skillset_selection/config_min{MIN_USERS}_k{K}.json - スキル設定
 outputs/assistments_2009_2010/skillset_selection/valid_users_min{MIN_USERS}_k{K}.csv - ユーザーリスト
@@ -82,3 +81,55 @@ skill_states_first.csv / skill_states_second.csv
 カバレッジ保証: 前後半両方で全Kスキルに取り組んだユーザーのみを使用
 仮想問題生成: 実際の問題正誤ではなく、正解率から確率的に問題応答を生成
 独立推定: 前半と後半のDINAモデルは独立に推定（同じQ行列を使用）
+
+
+
+
+# スキル名指定
+主な機能:
+1. スキル名またはIDで指定可能
+# スキル名で指定
+python scripts/assistments_2009_2010/create_manual_skillset.py \
+  --skills "Box and Whisker" "Circle Graph" "Venn Diagram"
+
+# スキルIDで指定
+python scripts/assistments_2009_2010/create_manual_skillset.py \
+  --skills 280.0 70.0 77.0
+
+2. 利用可能なスキル一覧の表示
+python scripts/assistments_2009_2010/create_manual_skillset.py --list_skills
+
+データ検証機能
+
+前後半両方でのカバレッジ確認
+スキルごとのユーザー数・問題数
+検証レポートの自動生成
+詳細な確認レポート
+
+verification_manual_k{K}.txt ファイルに保存
+選定したスキルが正しく取得できているか確認可能
+
+
+## 次のステップのコマンド
+# データ抽出
+python scripts/assistments_2009_2010/extract_selected_data.py \
+  --config_name config_s15_s96_s113 \
+  --output_dir data/processed/assistments_2009_2010/s15_s96_s113
+
+# DINA推定
+python scripts/assistments_2009_2010/estimate_skill_states.py \
+  --data_dir data/processed/assistments_2009_2010/s15_s96_s113 \
+  --K 3
+
+
+1. create_manual_skillset.py (手動スキル選択)
+   ↓ 出力: config_s70_s77_s280.json
+   ↓       valid_users_s70_s77_s280.csv
+   ↓
+2. extract_selected_data.py (このコード - データ抽出)
+   ↓ 出力: filtered_data.csv
+   ↓       first_half_data.csv / second_half_data.csv
+   ↓       response_matrix_*.csv
+   ↓
+3. estimate_skill_states.py (DINA推定)
+   ↓ 出力: skill_states.csv

@@ -517,31 +517,50 @@ class SkillStateEstimator:
 def main():
     """Main execution function."""
     parser = argparse.ArgumentParser(
-        description='Estimate skill states using DINA model for ASSISTments dataset'
+        description='Estimate skill states using DINA model for ASSISTments dataset',
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Examples:
+  # Using manual skill selection (from create_manual_skillset.py + extract_selected_data.py):
+  python estimate_skill_states.py \\
+    --data_dir data/processed/assistments_2009_2010/processed_data/s70_s77_s280 \\
+    --output_dir data/processed/assistments_2009_2010/dina_estimation/s70_s77_s280
+  
+  # Using traditional min_users and K:
+  python estimate_skill_states.py --min_users 150 --K 10
+  
+  # Adjust virtual items per skill (recommended: 20-30):
+  python estimate_skill_states.py \\
+    --data_dir data/processed/assistments_2009_2010/processed_data/s70_s77_s280 \\
+    --n_items_per_skill 25
+        """
     )
     parser.add_argument(
         '--min_users',
         type=int,
         default=150,
-        help='MIN_USERS threshold (default: 150)'
+        help='MIN_USERS threshold (default: 150). Used only if --data_dir is not provided.'
     )
     parser.add_argument(
         '--K',
         type=int,
         default=10,
-        help='Number of skills (default: 10)'
+        help='Number of skills (default: 10). Used only if --data_dir is not provided.'
     )
     parser.add_argument(
         '--data_dir',
         type=str,
         default=None,
-        help='Data directory (default: data/processed/assistments_2009_2010/min{MIN_USERS}_k{K})'
+        help='Data directory containing processed data. '
+             'Default: data/processed/assistments_2009_2010/processed_data/min{MIN_USERS}_k{K} '
+             'For manual selection: data/processed/assistments_2009_2010/processed_data/s70_s77_s280'
     )
     parser.add_argument(
         '--output_dir',
         type=str,
         default=None,
-        help='Output directory (default: outputs/assistments_2009_2010/dina_estimation/min{MIN_USERS}_k{K})'
+        help='Output directory for estimation results. '
+             'Default: data/processed/assistments_2009_2010/dina_estimation/[data_dir_name]'
     )
     parser.add_argument(
         '--n_items_per_skill',
@@ -560,27 +579,44 @@ def main():
     
     # Construct paths
     if args.data_dir is None:
-        data_dir = f'data/processed/assistments_2009_2010/min{args.min_users}_k{args.K}'
+        # Traditional mode with min_users and K
+        data_dir = f'data/processed/assistments_2009_2010/processed_data/min{args.min_users}_k{args.K}'
+        default_output_subdir = f'min{args.min_users}_k{args.K}'
     else:
+        # Manual selection or custom path mode
         data_dir = args.data_dir
+        # Extract subdirectory name from data_dir (e.g., "s70_s77_s280" from path)
+        default_output_subdir = Path(data_dir).name
     
     if args.output_dir is None:
-        output_dir = f'outputs/assistments_2009_2010/dina_estimation/min{args.min_users}_k{args.K}'
+        output_dir = f'data/processed/assistments_2009_2010/dina_estimation/{default_output_subdir}'
     else:
         output_dir = args.output_dir
     
     # Check if data directory exists
     if not Path(data_dir).exists():
-        raise FileNotFoundError(f"Data directory not found: {data_dir}")
+        raise FileNotFoundError(
+            f"Data directory not found: {data_dir}\n"
+            f"Please run extract_selected_data.py first to prepare the data."
+        )
     
     # Run estimation
     estimator = SkillStateEstimator(data_dir, verbose=args.verbose)
     estimator.run(output_dir, n_items_per_skill=args.n_items_per_skill)
     
     print(f"\n✓ Skill state estimation completed successfully!")
+    print(f"  Input data: {data_dir}")
     print(f"  Output directory: {output_dir}")
     print(f"  n_items_per_skill: {args.n_items_per_skill}")
 
-
 if __name__ == '__main__':
     main()
+
+"""
+Output files:
+- skill_states_first.csv - Estimated skill states for first-half
+- skill_states_second.csv - Estimated skill states for second-half
+- skill_transitions.csv - Skill state transition analysis
+- skill_mapping.json - Skill ID to name mapping
+- estimation_summary.json - Summary statistics
+"""

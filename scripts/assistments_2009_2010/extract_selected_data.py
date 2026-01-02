@@ -363,37 +363,62 @@ class DataExtractor:
 def main():
     """Main execution function."""
     parser = argparse.ArgumentParser(
-        description='Extract data for selected skill sets from ASSISTments dataset'
+        description='Extract data for selected skill sets from ASSISTments dataset',
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Examples:
+  # Using manual skill selection (from create_manual_skillset.py):
+  python extract_selected_data.py --config_name config_s70_s77_s280
+  
+  # Using traditional min_users and K:
+  python extract_selected_data.py --min_users 150 --K 10
+  
+  # Specify custom paths:
+  python extract_selected_data.py \\
+    --config_name config_s70_s77_s280 \\
+    --config_dir data/processed/assistments_2009_2010/selected_data/s70_s77_s280 \\
+    --output_dir data/processed/assistments_2009_2010/processed_data/s70_s77_s280
+        """
     )
     parser.add_argument(
         '--min_users',
         type=int,
         default=150,
-        help='MIN_USERS threshold (default: 150)'
+        help='MIN_USERS threshold (default: 150). Ignored if --config_name is provided.'
     )
     parser.add_argument(
         '--K',
         type=int,
         default=10,
-        help='Number of skills (default: 10)'
+        help='Number of skills (default: 10). Ignored if --config_name is provided.'
+    )
+    parser.add_argument(
+        '--config_name',
+        type=str,
+        default=None,
+        help='Configuration name (e.g., config_s70_s77_s280 or s70_s77_s280). '
+             'If provided, --min_users and --K are ignored.'
     )
     parser.add_argument(
         '--data_path',
         type=str,
         default='data/raw/assistments_2009_2010/skill_builder_data.csv',
-        help='Path to raw data CSV'
+        help='Path to raw data CSV (default: data/raw/assistments_2009_2010/skill_builder_data.csv)'
     )
     parser.add_argument(
         '--config_dir',
         type=str,
-        default='outputs/assistments_2009_2010/skillset_selection',
-        help='Directory containing configuration files'
+        default=None,
+        help='Directory containing configuration files. '
+             'Default: data/processed/assistments_2009_2010/selected_data/[skill_ids] for manual, '
+             'outputs/assistments_2009_2010/skillset_selection for traditional.'
     )
     parser.add_argument(
         '--output_dir',
         type=str,
         default=None,
-        help='Output directory (default: data/processed/assistments_2009_2010/min{MIN_USERS}_k{K})'
+        help='Output directory. '
+             'Default: data/processed/assistments_2009_2010/processed_data/[skill_ids or min{MIN_USERS}_k{K}]'
     )
     parser.add_argument(
         '--verbose',
@@ -404,20 +429,61 @@ def main():
     
     args = parser.parse_args()
     
-    # Construct paths
-    config_path = Path(args.config_dir) / f'config_min{args.min_users}_k{args.K}.json'
-    valid_users_path = Path(args.config_dir) / f'valid_users_min{args.min_users}_k{args.K}.csv'
-    
-    if args.output_dir is None:
-        output_dir = f'data/processed/assistments_2009_2010/min{args.min_users}_k{args.K}'
+    # Construct paths based on whether config_name is provided
+    if args.config_name:
+        # Manual skill selection mode
+        config_name = args.config_name
+        
+        # Normalize config name
+        if config_name.endswith('.json'):
+            config_name = config_name[:-5]
+        if not config_name.startswith('config_'):
+            config_name = f'config_{config_name}'
+        
+        # Extract skill_id_str from config_name (e.g., "config_s70_s77_s280" -> "s70_s77_s280")
+        skill_id_str = config_name.replace('config_', '')
+        
+        # Set config_dir default
+        if args.config_dir is None:
+            config_dir = f'data/processed/assistments_2009_2010/selected_data/{skill_id_str}'
+        else:
+            config_dir = args.config_dir
+        
+        config_path = Path(config_dir) / f'{config_name}.json'
+        valid_users_path = Path(config_dir) / f'valid_users_{skill_id_str}.csv'
+        
+        # Set output_dir default
+        if args.output_dir is None:
+            output_dir = f'data/processed/assistments_2009_2010/processed_data/{skill_id_str}'
+        else:
+            output_dir = args.output_dir
+            
     else:
-        output_dir = args.output_dir
+        # Traditional min_users and K mode
+        if args.config_dir is None:
+            config_dir = 'outputs/assistments_2009_2010/skillset_selection'
+        else:
+            config_dir = args.config_dir
+        
+        config_path = Path(config_dir) / f'config_min{args.min_users}_k{args.K}.json'
+        valid_users_path = Path(config_dir) / f'valid_users_min{args.min_users}_k{args.K}.csv'
+        
+        if args.output_dir is None:
+            output_dir = f'data/processed/assistments_2009_2010/processed_data/min{args.min_users}_k{args.K}'
+        else:
+            output_dir = args.output_dir
     
     # Check if files exist
     if not config_path.exists():
-        raise FileNotFoundError(f"Configuration file not found: {config_path}")
+        raise FileNotFoundError(
+            f"Configuration file not found: {config_path}\n"
+            f"Please run create_manual_skillset.py first to generate the configuration."
+        )
     if not valid_users_path.exists():
-        raise FileNotFoundError(f"Valid users file not found: {valid_users_path}")
+        raise FileNotFoundError(
+            f"Valid users file not found: {valid_users_path}\n"
+            f"Please run create_manual_skillset.py first to generate the user list."
+        )
     
     # Run extraction
     extractor = DataExtractor(args.data_path, str(config_path), verbose=args.verbose)
@@ -431,10 +497,11 @@ if __name__ == '__main__':
     main()
 
 """
-data_info.json - 設定情報
-filtered_data.csv - フィルタ済み全データ
-first_half_data.csv / second_half_data.csv - 前半・後半データ
-response_matrix_first.csv / response_matrix_second.csv - 応答パターン行列
-aggregated_matrix_first.csv / aggregated_matrix_second.csv - 正答率集計
-user_statistics.csv - ユーザー統計
+Output files:
+- data_info.json - Configuration information
+- filtered_data.csv - All filtered data
+- first_half_data.csv / second_half_data.csv - Temporal split data
+- response_matrix_first.csv / response_matrix_second.csv - Response patterns
+- aggregated_matrix_first.csv / aggregated_matrix_second.csv - Aggregated correct rates
+- user_statistics.csv - User statistics
 """

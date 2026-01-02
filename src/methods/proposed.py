@@ -20,6 +20,7 @@ class ProposedBCSoftmaxMethod(BaseMethod):
         seed: int,         # 乱数シード
         exp_cfg: dict,      # 実験設定
         training_cfg: dict,   # 学習設定
+        save: bool = True,  # モデル保存フラグ
     ):
         self.method_name = method_name
         self.device = device
@@ -27,6 +28,7 @@ class ProposedBCSoftmaxMethod(BaseMethod):
         self.exp_cfg = exp_cfg
         self.training_cfg = training_cfg["training_cfg"]
         self.recipe = training_cfg["recipe"]
+        self.save = save
 
         self.model = ProposedModel(n_skills=n_skills).to(device)
 
@@ -40,6 +42,7 @@ class ProposedBCSoftmaxMethod(BaseMethod):
             exp_cfg=self.exp_cfg,
             training_cfg=self.training_cfg,
             recipe=self.recipe,
+            save = self.save
         )
 
     @torch.no_grad()

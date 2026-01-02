@@ -14,6 +14,7 @@ def build_method(
     seed: int,
     exp_cfg: Optional[Dict[str, Any]] = None,
     training_cfg: Optional[Dict[str, Any]] = None,
+    save: bool = True,
 ):
     """各手法に必要なパラメータだけを渡す"""
     t = method_cfg["id"]
@@ -29,7 +30,8 @@ def build_method(
             device=device,
             seed=seed,
             exp_cfg=exp_cfg,
-            training_cfg=training_cfg
+            training_cfg=training_cfg,
+            save = save
         )
     
     elif t == "popularity":
