@@ -48,6 +48,20 @@ def main():
         print("Experiment Configuration:")
         print(exp_cfg)
         print("===")
+        
+        # === 既存結果の読み込み ===
+        results_dir = Path(base_cfg["results_folder"])
+        results_dir.mkdir(parents=True, exist_ok=True)
+        exp_name = "_".join([f"{k}-{v}" for k, v in exp_cfg.items()])
+        csv_path = results_dir / f"{exp_name}.csv"
+        
+        if csv_path.exists():
+            existing_df = pd.read_csv(csv_path)
+            print(f"Loaded existing results from {csv_path}")
+        else:
+            existing_df = pd.DataFrame()
+            print(f"No existing results found, starting fresh")
+        
         records = []
 
         for seed in base_cfg["seeds"]:
@@ -56,6 +70,15 @@ def main():
             _, test_dataset = generate_data(A, seed=seed + 10000, cfg=exp_cfg, n_test=100)
 
             for method_cfg in base_cfg["methods"]:
+                # 既存結果にこのseed×methodの組み合わせがあるかチェック
+                if not existing_df.empty:
+                    exists = ((existing_df["seed"] == seed) & 
+                             (existing_df["method"] == method_cfg["id"])).any()
+                    if exists:
+                        print(f"  Skipping seed={seed}, method={method_cfg['id']} (already exists)")
+                        continue
+                
+                print(f"  Running seed={seed}, method={method_cfg['id']}")
                 method_seed = derive_seed(seed, method_cfg["id"])  # methodごとに分ける
                 set_seed(method_seed)
 
@@ -108,14 +131,18 @@ def main():
                 records.append(record)
 
         # === 保存 ===
-        results_dir = Path(base_cfg["results_folder"])
-        results_dir.mkdir(parents=True, exist_ok=True)
-
-        df = pd.DataFrame(records)
-        exp_name = "_".join([f"{k}-{v}" for k, v in exp_cfg.items()])
-        csv_path = results_dir / f"{exp_name}.csv"
-
-        df.to_csv(csv_path, index=False)
+        if records:
+            new_df = pd.DataFrame(records)
+            # 既存データと新規データを結合
+            if not existing_df.empty:
+                combined_df = pd.concat([existing_df, new_df], ignore_index=True)
+            else:
+                combined_df = new_df
+            
+            combined_df.to_csv(csv_path, index=False)
+            print(f"Saved {len(records)} new results to {csv_path}")
+        else:
+            print(f"No new results to save for this experiment configuration")
 
 if __name__ == "__main__":
     main()

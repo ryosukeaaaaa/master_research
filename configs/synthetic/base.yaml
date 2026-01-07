@@ -25,6 +25,9 @@ methods:
   - id: random
     dataset_id: current_data
 
+  - id: bayesian_network
+    dataset_id: current_data
+
 # --- 評価指標 ---
 evaluation:
   distribution_metrics: [kl, hd, jsd]

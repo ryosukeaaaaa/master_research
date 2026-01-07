@@ -5,7 +5,7 @@ import torch
 from typing import Union
 
 from .base import BaseMethod
-from src.utils.redistribute import redistribute  # 既存関数を想定
+from src.utils.redistribute import redistribute
 
 class PopularityMethod(BaseMethod):
     def __init__(

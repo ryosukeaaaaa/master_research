@@ -7,6 +7,8 @@ from src.methods.popularity import PopularityMethod
 from src.methods.simple_markov import SimpleMarkovMethod
 from src.methods.random import RandomMethod
 
+from src.methods.bayesiannetwork import BayesianNetworkMethod
+
 
 def build_method(
     method_cfg: dict,
@@ -50,6 +52,13 @@ def build_method(
     
     elif t == "random":
         return RandomMethod(
+            method_name=method_name,
+            device=device,
+            seed=seed,
+        )
+    
+    elif t == "bayesian_network":
+        return BayesianNetworkMethod(
             method_name=method_name,
             device=device,
             seed=seed,

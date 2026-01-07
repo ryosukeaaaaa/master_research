@@ -1,15 +1,13 @@
-from pgmpy.models import BayesianModel
-from pgmpy.estimators import HillClimbSearch, BicScore, MaximumLikelihoodEstimator
-import itertools
-
-
 import numpy as np
 import torch
 from typing import Dict, Any, Union
 
-from pgmpy.models import BayesianModel
-from pgmpy.estimators import HillClimbSearch, BicScore, BayesianEstimator
+from pgmpy.models import DiscreteBayesianNetwork
+from pgmpy.estimators import HillClimbSearch, BayesianEstimator, BIC
 from pgmpy.inference import VariableElimination
+
+from .base import BaseMethod
+from src.utils.redistribute import redistribute
 
 
 class BayesianNetworkMethod(BaseMethod):
@@ -26,14 +24,20 @@ class BayesianNetworkMethod(BaseMethod):
         self.seed = seed
         self.max_parents = max_parents
 
-        self.model: BayesianModel = None
-        self.infer: VariableElimination = None
+        self.model: DiscreteBayesianNetwork | None = None
+        self.infer: VariableElimination | None = None
         self.skill_names = None
 
+    # ------------------------------------------------------------------
+    # FIT
+    # ------------------------------------------------------------------
     def fit(self, train_data: Dict[str, Any]) -> None:
         """
         train_data["current_data"]: (n_students, n_skills)
         """
+        import logging
+        logging.getLogger("pgmpy").setLevel(logging.WARNING)
+        
         X = train_data["current_data"]
         if isinstance(X, torch.Tensor):
             X = X.detach().cpu().numpy()
@@ -41,19 +45,22 @@ class BayesianNetworkMethod(BaseMethod):
         n_students, n_skills = X.shape
         self.skill_names = [f"s{i}" for i in range(n_skills)]
 
-        # pgmpy 用 DataFrame
         import pandas as pd
-        df = pd.DataFrame(X, columns=self.skill_names)
+        df = pd.DataFrame(X, columns=self.skill_names).astype(int)
 
-        # --- 構造学習（HC + BIC, 親数制約） ---
-        hc = HillClimbSearch(df, scoring_method=BicScore(df))
+        # --- 構造学習（HC + BIC） ---
+        hc = HillClimbSearch(df)
         best_model = hc.estimate(
-            max_indegree=self.max_parents
+            scoring_method=BIC(df),
+            max_indegree=self.max_parents,
         )
 
-        self.model = BayesianModel(best_model.edges())
+        # --- 離散BN ---
+        self.model = DiscreteBayesianNetwork()
+        self.model.add_nodes_from(self.skill_names)
+        self.model.add_edges_from(best_model.edges())
 
-        # --- CPT 推定（Bayesian Estimator 推奨） ---
+        # --- CPT 推定 ---
         self.model.fit(
             df,
             estimator=BayesianEstimator,
@@ -61,13 +68,31 @@ class BayesianNetworkMethod(BaseMethod):
             equivalent_sample_size=1.0,
         )
 
-        # 推論エンジン
+        # ★ CPD 補完（孤立ノード対策）
+        from pgmpy.factors.discrete import TabularCPD
+
+        for node in self.model.nodes():
+            if self.model.get_cpds(node) is None:
+                p = df[node].mean()
+                p = float(np.clip(p, 1e-6, 1 - 1e-6))
+                cpd = TabularCPD(
+                    variable=node,
+                    variable_card=2,
+                    values=[[1 - p], [p]],
+                )
+                self.model.add_cpds(cpd)
+
+        # --- 推論エンジン ---
         self.infer = VariableElimination(self.model)
 
+
+    # ------------------------------------------------------------------
+    # PREDICT PROBA
+    # ------------------------------------------------------------------
     @torch.no_grad()
     def predict_proba(
         self,
-        state: Union[np.ndarray, torch.Tensor]
+        state: Union[np.ndarray, torch.Tensor],
     ) -> np.ndarray:
         """
         state: (n_skills,) current state (0/1)
@@ -86,16 +111,17 @@ class BayesianNetworkMethod(BaseMethod):
         if (state == 1).all():
             return proba
 
-        # 観測（evidence）
-        evidence = {
-            self.skill_names[i]: int(state[i])
-            for i in range(n_skills)
-        }
-
-        # 各未習得スキルについて
+        # 各未習得スキルについて P(s_i=1 | s_-i)
         for i in range(n_skills):
             if state[i] == 1:
                 continue
+
+            # ★ i 番目のスキルは evidence から除外
+            evidence = {
+                self.skill_names[j]: int(state[j])
+                for j in range(n_skills)
+                if j != i
+            }
 
             q = self.infer.query(
                 variables=[self.skill_names[i]],
@@ -103,20 +129,22 @@ class BayesianNetworkMethod(BaseMethod):
                 show_progress=False,
             )
 
-            # P(skill_i = 1 | current)
-            proba[i] = q.values[1]
+            # binary variable → index 1 が「習得」
+            proba[i] = float(q.values[1])
 
-        # 正規化（未習得スキル上）
+        # 未習得スキル上で正規化
         s = proba.sum()
         if s > 0:
-            proba = proba / s
+            proba /= s
         else:
-            # フォールバック：未習得で一様
             mask = (state == 0)
             proba[mask] = 1.0 / mask.sum()
 
         return proba
 
+    # ------------------------------------------------------------------
+    # PREDICT
+    # ------------------------------------------------------------------
     @torch.no_grad()
     def predict(self, test_data: Dict[str, Any]) -> Dict[str, Any]:
         """
@@ -153,6 +181,7 @@ class BayesianNetworkMethod(BaseMethod):
         preds = np.stack(preds, axis=0)
 
         return preds
+
 
 
 # # skill snapshots : DataFrame with columns = skill names (0/1)

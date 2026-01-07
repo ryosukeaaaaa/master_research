@@ -14,15 +14,18 @@ dataset:
   # - name: "s173_s190_s193_s221"
   #   id: "data/processed/assistments_2009_2010/dina_estimation/s173_s190_s193_s221"
   #   n_skills: 4
-  # - name: "s58_s74_s85"
+  # - name: "s58_s74_s85" # まだマシ
   #   id: "data/processed/assistments_2009_2010/dina_estimation/s58_s74_s85"
   #   n_skills: 3
-  # - name: "s2_s37_s48_s70_s77"
-  #   id: "data/processed/assistments_2009_2010/dina_estimation/s2_s37_s48_s70_s77"
-  #   n_skills: 5
-  - name: "s58_s74_s85_s277_s279"
-    id: "data/processed/assistments_2009_2010/dina_estimation/s58_s74_s85_s277_s279"
+  - name: "s2_s37_s48_s70_s77" # ほぼ全員習得している
+    id: "data/processed/assistments_2009_2010/dina_estimation/s2_s37_s48_s70_s77"
     n_skills: 5
+  # - name: "s58_s74_s85_s277_s279" # 人数少ない
+  #   id: "data/processed/assistments_2009_2010/dina_estimation/s58_s74_s85_s277_s279"
+  #   n_skills: 5
+  # - name: "s48_s77_s79_s276_s280" # 人数が少ない
+  #   id: "data/processed/assistments_2009_2010/dina_estimation/s48_s77_s79_s276_s280"
+  #   n_skills: 5
 
 split_ratio: 0.8
 
@@ -46,6 +49,9 @@ methods:
     dataset_id: current_data
 
   - id: random
+    dataset_id: current_data
+
+  - id: bayesian_network
     dataset_id: current_data
 
 # --- 評価指標 ---
