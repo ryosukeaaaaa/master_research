@@ -10,6 +10,6 @@ recipe:
     lambda: 0.001 # save_folder, results_folderも変更すること
 
 training_cfg:
-  save_folder: outputs/assistments_2009_2010/models_L1_0.0001/
+  save_folder: outputs/assistments_2009_2010/first_all_dina_estimation/models_L1_0.001/
   save_best_only: true
   checkpoint_freq: 100

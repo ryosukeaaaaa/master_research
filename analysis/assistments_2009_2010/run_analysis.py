@@ -27,21 +27,32 @@ HIGHER_IS_BETTER = {
 }
 
 
-def load_results(results_dir: str) -> dict:
+def load_results(results_dir: str, input_files: list = None) -> dict:
     """
     結果CSVを読み込む（ファイルごとに分けて返す）
     
     Args:
         results_dir: 結果ディレクトリのパス
+        input_files: 読み込むファイル名のリスト（指定しない場合は全CSVファイル）
     
     Returns:
         dict: ファイル名をキー、DataFrameを値とする辞書
     """
     results_path = Path(results_dir)
-    csv_files = list(results_path.glob("*.csv"))
     
-    if not csv_files:
-        raise FileNotFoundError(f"結果CSVが見つかりません: {results_path}")
+    if input_files:
+        # 指定されたファイルのみ読み込む
+        csv_files = [results_path / f for f in input_files]
+        # 存在しないファイルをチェック
+        missing_files = [f for f in csv_files if not f.exists()]
+        if missing_files:
+            raise FileNotFoundError(f"以下のファイルが見つかりません: {[str(f) for f in missing_files]}")
+    else:
+        # ディレクトリ内の全CSVファイルを読み込む
+        csv_files = list(results_path.glob("*.csv"))
+        
+        if not csv_files:
+            raise FileNotFoundError(f"結果CSVが見つかりません: {results_path}")
     
     # 各CSVファイルを読み込んでディクショナリに格納
     results_dict = {}
@@ -236,6 +247,25 @@ def main():
         default=1.0,
         help='正則化のλ値 (例: 0.001, 0.01, 0.1)'
     )
+    parser.add_argument(
+        '--input-dir',
+        type=str,
+        default=None,
+        help='入力ディレクトリのパス (デフォルト: outputs/assistments_2009_2010/results_{reg_suffix})'
+    )
+    parser.add_argument(
+        '--output-dir',
+        type=str,
+        default=None,
+        help='出力ディレクトリのパス (デフォルト: analysis/assistments_2009_2010/{reg_suffix})'
+    )
+    parser.add_argument(
+        '--input-files',
+        type=str,
+        nargs='+',
+        default=None,
+        help='読み込むCSVファイル名のリスト (例: file1.csv file2.csv)'
+    )
     args = parser.parse_args()
     
     # 正則化パラメータに基づいてディレクトリ名を構築
@@ -245,8 +275,16 @@ def main():
         reg_suffix = f"{args.reg_type}_{args.reg_lambda}"
     
     # 結果ディレクトリ
-    results_dir = f"outputs/assistments_2009_2010/results_{reg_suffix}"
-    output_dir = Path(f"analysis/assistments_2009_2010/{reg_suffix}")
+    if args.input_dir:
+        results_dir = args.input_dir
+    else:
+        results_dir = f"outputs/assistments_2009_2010/results_{reg_suffix}"
+    
+    if args.output_dir:
+        output_dir = Path(args.output_dir)
+    else:
+        output_dir = Path(f"analysis/assistments_2009_2010/{reg_suffix}")
+    
     output_dir.mkdir(parents=True, exist_ok=True)
     
     # 評価指標
@@ -261,14 +299,19 @@ def main():
     
     # 結果読み込み
     print("\n[1] 結果の読み込み")
+    if args.input_files:
+        print(f"  指定されたファイル: {args.input_files}")
     try:
-        results_dict = load_results(results_dir)
+        results_dict = load_results(results_dir, args.input_files)
         print(f"  データセット数: {len(results_dict)}")
         for dataset_name, df in results_dict.items():
             print(f"  - {dataset_name}: {len(df)} records")
     except FileNotFoundError as e:
         print(f"  エラー: {e}")
-        print(f"  指定されたディレクトリ '{results_dir}' が存在しないか、CSVファイルがありません")
+        if args.input_files:
+            print(f"  指定されたファイルが '{results_dir}' に存在しません")
+        else:
+            print(f"  指定されたディレクトリ '{results_dir}' が存在しないか、CSVファイルがありません")
         return
     
     # 各データセットごとに分析

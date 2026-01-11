@@ -2,7 +2,7 @@
 seeds: # configs/assistments_2009_2010/base.yaml
 seeds: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99]
 device: auto
-results_folder: outputs/assistments_2009_2010/results_L1_0.0001/
+results_folder: outputs/assistments_2009_2010/first_all_dina_estimation/results_L1_0.001/
 
 dataset:
   # - name: "k5"
@@ -17,29 +17,69 @@ dataset:
   # - name: "s58_s74_s85" # まだマシ
   #   id: "data/processed/assistments_2009_2010/dina_estimation/s58_s74_s85"
   #   n_skills: 3
-  - name: "s2_s37_s48_s70_s77" # ほぼ全員習得している
-    id: "data/processed/assistments_2009_2010/dina_estimation/s2_s37_s48_s70_s77"
-    n_skills: 5
+  # - name: "s2_s37_s48_s70_s77" # ほぼ全員習得している
+  #   id: "data/processed/assistments_2009_2010/dina_estimation/s2_s37_s48_s70_s77"
+  #   n_skills: 5
   # - name: "s58_s74_s85_s277_s279" # 人数少ない
   #   id: "data/processed/assistments_2009_2010/dina_estimation/s58_s74_s85_s277_s279"
   #   n_skills: 5
   # - name: "s48_s77_s79_s276_s280" # 人数が少ない
   #   id: "data/processed/assistments_2009_2010/dina_estimation/s48_s77_s79_s276_s280"
   #   n_skills: 5
+  # - name: "s2_s47_s50_s70_s77" #　イマイチ
+  #   id: "data/processed/assistments_2009_2010/first_all_dina_estimation/s2_s47_s50_s70_s77"
+  #   n_skills: 5
+  # - name: "s2_s37_s48_s70_s77" # 負ける
+  #   id: "data/processed/assistments_2009_2010/first_all_dina_estimation/s2_s37_s48_s70_s77"
+  #   n_skills: 5
+  # - name: "s2_s37_s47_s48_s49_s50_s70_s76_s77_s81" # 一応勝利したが、FullのAcc.が100%になったのは違和感
+  #   id: "data/processed/assistments_2009_2010/first_all_dina_estimation/s2_s37_s47_s48_s49_s50_s70_s76_s77_s81"
+  #   n_skills: 10
+  # - name: "s2_s10_s11_s13_s15_s37_s48_s70_s77_s79"
+  #   id: "data/processed/assistments_2009_2010/first_all_dina_estimation/s2_s10_s11_s13_s15_s37_s48_s70_s77_s79"
+  #   n_skills: 10
+  # - name: "s58_s74_s277_s279_s280" # 最有力候補
+  #   id: "data/processed/assistments_2009_2010/first_all_dina_estimation/s58_s74_s277_s279_s280"
+  #   n_skills: 5
+  # - name: "s47_s49_s50_s58_s67_s74_s277_s278_s279_s280"
+  #   id: "data/processed/assistments_2009_2010/first_all_dina_estimation/s47_s49_s50_s58_s67_s74_s277_s278_s279_s280"
+  #   n_skills: 10
+  # - name: "s47_s49_s50_s58_s67_s70_s74_s77_s79_s86_s277_s278_s279_s280_s309"
+  #   id: "data/processed/assistments_2009_2010/first_all_dina_estimation/s47_s49_s50_s58_s67_s70_s74_s77_s79_s86_s277_s278_s279_s280_s309"
+  #   n_skills: 15
+  # - name: "s13_s18_s47_s49_s50_s58_s67_s70_s74_s77_s85_s277_s279_s280_s311"
+  #   id: "data/processed/assistments_2009_2010/first_all_dina_estimation/s13_s18_s47_s49_s50_s58_s67_s70_s74_s77_s85_s277_s279_s280_s311"
+  #   n_skills: 15
+  # - name: "s10_s13_s14_s15_s47_s49_s58_s67_s70_s74_s77_s79_s86_s277_s278_s279_s280_s309"
+  #   id: "data/processed/assistments_2009_2010/first_all_dina_estimation/s10_s13_s14_s15_s47_s49_s58_s67_s70_s74_s77_s79_s86_s277_s278_s279_s280_s309"
+  #   n_skills: 18
+  # - name: "s10_s13_s14_s15_s47_s49_s58_s70_s74_s77_s79_s277_s278_s279_s280" # 1/9 勝利
+  #   id: "data/processed/assistments_2009_2010/first_all_dina_estimation/s10_s13_s14_s15_s47_s49_s58_s70_s74_s77_s79_s277_s278_s279_s280"
+  #   n_skills: 15
+  - name: "s47_s49_s58_s70_s74_s79_s277_s278_s279_s280" # 1/9 勝利
+    id: "data/processed/assistments_2009_2010/first_all_dina_estimation/s47_s49_s58_s70_s74_s79_s277_s278_s279_s280"
+    n_skills: 10
+  # - name: "s47_s49_s277_s279_s280" # 1/9 勝利
+  #   id: "data/processed/assistments_2009_2010/first_all_dina_estimation/s47_s49_s277_s279_s280"
+  #   n_skills: 5
 
-split_ratio: 0.8
+  # - name: "s47_s49_s58_s67_s70_s74_s277_s278_s279_s280" # 1/9 勝利
+  #   id: "data/processed/assistments_2009_2010/first_all_dina_estimation/s47_s49_s58_s67_s70_s74_s277_s278_s279_s280"
+  #   n_skills: 10　　　間違えた
+
+split_ratio: 0.7
 
 # --- 手法（NN/ルール を全部ここへ） ---
 methods:
   # proposed を current_data で学習
   - id: proposed
     dataset_id: current_data
-    split_ratio: 0.8
+    split_ratio: 0.7
 
   # “full-information” は同じモデルでもOK。違いは dataset_id だけ。
   - id: full_information
     dataset_id: full_information_data
-    split_ratio: 0.8
+    split_ratio: 0.7
 
   # ルールベースは学習不要 or 軽いfit
   - id: popularity

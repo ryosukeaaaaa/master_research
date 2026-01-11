@@ -1,0 +1,6 @@
+dataset,baseline,n_trials,acc_wins,acc_win_rate,spa_wins,spa_win_rate,ace_wins,ace_win_rate,mse_wins,mse_win_rate
+s47_s49_s50_s58_s67_s74_s277_s278_s279_s280_L1_0.001,full_information,100,11,0.11,12,0.12,20,0.2,8,0.08
+s47_s49_s50_s58_s67_s74_s277_s278_s279_s280_L1_0.001,popularity,100,48,0.48,76,0.76,56,0.56,56,0.56
+s47_s49_s50_s58_s67_s74_s277_s278_s279_s280_L1_0.001,simple_markov,100,50,0.5,63,0.63,99,0.99,95,0.95
+s47_s49_s50_s58_s67_s74_s277_s278_s279_s280_L1_0.001,random,100,61,0.61,56,0.56,58,0.58,25,0.25
+s47_s49_s50_s58_s67_s74_s277_s278_s279_s280_L1_0.001,bayesian_network,100,62,0.62,90,0.9,98,0.98,96,0.96

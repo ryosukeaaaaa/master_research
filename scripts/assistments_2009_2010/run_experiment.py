@@ -24,9 +24,9 @@ def main():
         records = []  # データセットごとに初期化
         pre_current_dataset, pre_future_dataset = generate_data(data_dir=dataset_cfg["id"], n_skills=dataset_cfg["n_skills"])
         split_ratio = base_cfg["split_ratio"]
-        print("あああああ")
         print(pre_current_dataset.shape, pre_future_dataset.shape)
-        for seed in base_cfg["seeds"]:        
+        for seed in base_cfg["seeds"]:
+            print("seed:", seed)  
             # seedを使ってシャッフル
             n_samples = len(pre_current_dataset)
             rng = np.random.RandomState(seed)

@@ -9,7 +9,7 @@ Design (agreed):
 - Split per-user timeline into first half / full
 - Valid users: first half contains all target skills
 - For each period, compress multiple attempts of same (user, template) by taking the last (max order_id)
-- Train DINA once on FULL data to estimate slip/guess
+- Train DINA once on (FIRST + FULL) stacked data to estimate slip/guess   <<< UPDATED
 - Fix slip/guess and infer per-student MAP mastery vectors (alpha_current from first half, alpha_future from full)
 - Output alpha_current/alpha_future as {0,1}^K (MAP)
 
@@ -31,7 +31,6 @@ from typing import Dict, FrozenSet, List, Tuple
 import numpy as np
 import pandas as pd
 
-# EduCDM (as you already use)
 from EduCDM import EMDINA
 
 
@@ -72,14 +71,12 @@ def compute_most_common_skillset_per_template(
     template_to_skillset: Dict[int, FrozenSet[int]] = {}
 
     for template_id, tdf in df.groupby("template_id"):
-        # problem_id -> frozenset(skills)
         p2skills = (
             tdf.groupby("problem_id")["skill_id"]
             .apply(lambda x: frozenset(x.values.tolist()))
             .to_dict()
         )
 
-        # Count skill-set frequency across problems
         counts: Dict[FrozenSet[int], int] = {}
         for skills in p2skills.values():
             counts[skills] = counts.get(skills, 0) + 1
@@ -91,7 +88,6 @@ def compute_most_common_skillset_per_template(
 
 
 def split_user_half(df_user: pd.DataFrame) -> Tuple[pd.DataFrame, pd.DataFrame]:
-    """Split a user's rows into first half and second half by order_id."""
     df_user = df_user.sort_values("order_id")
     n = len(df_user)
     mid = n // 2
@@ -119,7 +115,6 @@ def compress_last_response(df_period: pd.DataFrame) -> pd.DataFrame:
     Within a given period dataframe, keep last attempt per (user_id, template_id),
     defined by max(order_id).
     """
-    # Ensure stable: sort then take tail(1)
     idx = (
         df_period.sort_values("order_id")
         .groupby(["user_id", "template_id"])
@@ -158,7 +153,6 @@ def build_response_matrix(
 # Fixed-parameter MAP inference (E-step equivalent)
 # -----------------------------
 def precompute_state_space(K: int) -> np.ndarray:
-    """Return array of integer bitmasks for all 2^K states."""
     n_states = 1 << K
     return np.arange(n_states, dtype=np.uint32)
 
@@ -168,15 +162,11 @@ def templates_to_required_masks(
     template_to_skillset: Dict[int, FrozenSet[int]],
     skill_to_index: Dict[int, int],
 ) -> np.ndarray:
-    """
-    Convert each template's required skill-set into a bitmask over K skills.
-    """
     req_masks = np.zeros(len(templates), dtype=np.uint32)
     for j, tid in enumerate(templates):
         skills = template_to_skillset[tid]
         mask = 0
         for s in skills:
-            # skills are guaranteed to be in skill_to_index (by construction/filtering)
             mask |= (1 << skill_to_index[s])
         req_masks[j] = np.uint32(mask)
     return req_masks
@@ -189,30 +179,20 @@ def infer_map_mastery(
     guess: np.ndarray,
     K: int,
 ) -> np.ndarray:
-    """
-    Fixed slip/guess, infer per-student MAP mastery vector (0/1)^K.
-
-    R: (n_users, n_templates) values in {0,1,-1}
-    req_masks: (n_templates,) bitmask for required skills of each template
-    slip, guess: (n_templates,)
-    Returns: (n_users, K) binary mastery (MAP state)
-    """
-    n_users, n_templates = R.shape
-    states = precompute_state_space(K)  # (n_states,)
+    n_users, _ = R.shape
+    states = precompute_state_space(K)
     n_states = len(states)
 
-    # eta: (n_states, n_templates) True iff state satisfies required skill-mask (AND)
     eta = (states[:, None] & req_masks[None, :]) == req_masks[None, :]
 
-    # Precompute log-probs per template for eta=1 / eta=0
     eps = 1e-12
     slip = np.clip(np.asarray(slip, dtype=float), eps, 1 - eps)
     guess = np.clip(np.asarray(guess, dtype=float), eps, 1 - eps)
 
-    log_p_x1_eta1 = np.log(1.0 - slip)   # P(x=1 | eta=1)
-    log_p_x0_eta1 = np.log(slip)         # P(x=0 | eta=1)
-    log_p_x1_eta0 = np.log(guess)        # P(x=1 | eta=0)
-    log_p_x0_eta0 = np.log(1.0 - guess)  # P(x=0 | eta=0)
+    log_p_x1_eta1 = np.log(1.0 - slip)
+    log_p_x0_eta1 = np.log(slip)
+    log_p_x1_eta0 = np.log(guess)
+    log_p_x0_eta0 = np.log(1.0 - guess)
 
     mastery_bits = np.zeros((n_users, K), dtype=int)
 
@@ -222,18 +202,16 @@ def infer_map_mastery(
             mastery_bits[i, :] = 0
             continue
 
-        x = R[i, obs_idx]  # {0,1}
+        x = R[i, obs_idx]
 
         ll = np.zeros(n_states, dtype=float)
 
-        # Contributions where x=1
         ones_pos = np.where(x == 1)[0]
         if ones_pos.size > 0:
             idx = obs_idx[ones_pos]
             eta_sub = eta[:, idx]
             ll += (eta_sub * log_p_x1_eta1[idx] + (~eta_sub) * log_p_x1_eta0[idx]).sum(axis=1)
 
-        # Contributions where x=0
         zeros_pos = np.where(x == 0)[0]
         if zeros_pos.size > 0:
             idx = obs_idx[zeros_pos]
@@ -289,7 +267,6 @@ def main():
     if K > 20:
         print("[WARN] K>20 makes exact MAP over 2^K expensive. Recommended K<=15 (or be prepared for slower inference).")
 
-    # Auto output dir
     base_output_root = Path("data/processed/assistments_2009_2010/first_all_dina_estimation")
     skill_str = "_".join([f"s{s}" for s in target_skills])
     out = Path(args.output_dir) if args.output_dir is not None else (base_output_root / skill_str)
@@ -320,13 +297,11 @@ def main():
     print("Computing template_id -> most_common_skills (based on problem_id skill-set frequency)...")
     template_to_skillset = compute_most_common_skillset_per_template(df_skill)
 
-    # Keep templates whose most_common_skills are non-empty and subset of target skills
     target_set = set(target_skills)
     templates_all = sorted([
         tid for tid, ss in template_to_skillset.items()
         if len(ss) > 0 and set(ss).issubset(target_set)
     ])
-
     print(f"  Templates usable (within target skills): {len(templates_all)}")
 
     print("Selecting valid users: first half covers all target skills...")
@@ -339,7 +314,6 @@ def main():
             "Try different skills, reduce K, or relax the user selection rule."
         )
 
-    # Save config-ish info
     with open(out / "run_config.json", "w") as f:
         json.dump(
             {
@@ -353,16 +327,15 @@ def main():
                 "item": "template_id",
                 "q_rule": "most_common_skillset_per_template (problem_id skillset frequency)",
                 "repeat_rule": "last attempt within period (max order_id) per (user, template)",
-                "alpha_rule": "MAP over all 2^K states with slip/guess fixed (learned on full)",
+                "fit_rule": "fit slip/guess on stacked dataset: [R_first; R_full] (2*n_users rows)",
+                "alpha_rule": "MAP over all 2^K states with slip/guess fixed",
             },
             f,
             indent=2,
         )
 
-    # Save valid users
     pd.DataFrame({"user_id": valid_users}).to_csv(out / "valid_users.csv", index=False)
 
-    # Build per-user first half and full data for valid users
     df_valid = df_skill[df_skill["user_id"].isin(valid_users)].copy()
 
     print("Splitting valid users into first-half (per user, on skill-only timeline)...")
@@ -378,30 +351,24 @@ def main():
     df_first_last = compress_last_response(df_first)
     df_full_last = compress_last_response(df_full)
 
-    # Templates used in modeling: those appearing in full_last AND present in template_to_skillset
     templates = sorted(list(set(df_full_last["template_id"].unique().tolist()) & set(templates_all)))
     print(f"  Templates used in modeling (from valid users full): {len(templates)}")
-
     if len(templates) == 0:
         raise ValueError("No templates available after filtering. This should not happen; check data integrity.")
 
-    # Build Q matrix
     print("Building Q matrix...")
     skill_to_index = {s: i for i, s in enumerate(target_skills)}
     Q = np.zeros((len(templates), K), dtype=int)
-
     for j, tid in enumerate(templates):
-        ss = template_to_skillset[tid]  # most_common skill-set
+        ss = template_to_skillset[tid]
         for s in ss:
             Q[j, skill_to_index[s]] = 1
 
-    # Save Q + template list
     q_df = pd.DataFrame(Q, columns=[f"skill_{s}" for s in target_skills])
     q_df.insert(0, "template_id", templates)
     q_df.to_csv(out / "q_matrix.csv", index=False)
     pd.DataFrame({"template_id": templates}).to_csv(out / "templates.csv", index=False)
 
-    # Build response matrices
     print("Building response matrices R_first / R_full...")
     R_first = build_response_matrix(df_first_last, valid_users, templates)
     R_full = build_response_matrix(df_full_last, valid_users, templates)
@@ -409,44 +376,46 @@ def main():
     np.save(out / "R_first.npy", R_first)
     np.save(out / "R_full.npy", R_full)
 
-    # Train DINA on FULL
-    print("Training DINA on FULL data (slip/guess will be fixed afterwards)...")
-    stu_num = R_full.shape[0]
-    prob_num = R_full.shape[1]
+    # >>> CHANGED: train on stacked [R_first; R_full]
+    print("Training DINA on STACKED data: [FIRST; FULL] (slip/guess will be fixed afterwards)...")
+    R_fit = np.vstack([R_first, R_full]).astype(int)
+    np.save(out / "R_fit.npy", R_fit)
+
+    stu_num = R_fit.shape[0]      # >>> CHANGED
+    prob_num = R_fit.shape[1]
     know_num = K
 
-    dina = EMDINA(R_full, Q, stu_num, prob_num, know_num, skip_value=-1)
+    dina = EMDINA(R_fit, Q, stu_num, prob_num, know_num, skip_value=-1)  # >>> CHANGED
     dina.train(epoch=args.epoch, epsilon=args.epsilon)
 
-    slip = np.asarray(dina.slip, dtype=float)   # (n_templates,)
-    guess = np.asarray(dina.guess, dtype=float) # (n_templates,)
+    slip = np.asarray(dina.slip, dtype=float)
+    guess = np.asarray(dina.guess, dtype=float)
 
-    # Save learned item params
     with open(out / "item_params.json", "w") as f:
         json.dump(
             {
                 "skills": target_skills,
                 "K": K,
-                "n_users": int(stu_num),
+                "n_users_fit": int(stu_num),        # >>> CHANGED
+                "n_users_original": int(len(valid_users)),
                 "n_templates": int(prob_num),
                 "epoch": int(args.epoch),
                 "epsilon": float(args.epsilon),
                 "templates": templates,
                 "slip": slip.tolist(),
                 "guess": guess.tolist(),
+                "fit_dataset": "stacked: first + full",
             },
             f,
             indent=2,
         )
 
-    # Fixed-parameter MAP inference
     print("Inferring MAP mastery (current from first, future from full) with fixed slip/guess...")
     req_masks = templates_to_required_masks(templates, template_to_skillset, skill_to_index)
 
     alpha_current = infer_map_mastery(R_first, req_masks, slip, guess, K)
     alpha_future = infer_map_mastery(R_full, req_masks, slip, guess, K)
 
-    # Save mastery
     colnames = [f"skill_{s}" for s in target_skills]
 
     df_cur = pd.DataFrame(alpha_current, columns=colnames)
@@ -457,9 +426,9 @@ def main():
     df_fut.insert(0, "user_id", valid_users)
     df_fut.to_csv(out / "alpha_future.csv", index=False)
 
-    # Summary
     summary = {
-        "n_users": int(stu_num),
+        "n_users": int(len(valid_users)),
+        "n_users_fit": int(stu_num),                 # >>> CHANGED
         "n_templates": int(prob_num),
         "K": int(K),
         "skills": target_skills,
@@ -468,6 +437,7 @@ def main():
         "avg_net_gain": float((df_fut[colnames].sum(axis=1) - df_cur[colnames].sum(axis=1)).mean()),
         "current_mastery_rate": {str(s): float(df_cur[f"skill_{s}"].mean()) for s in target_skills},
         "future_mastery_rate": {str(s): float(df_fut[f"skill_{s}"].mean()) for s in target_skills},
+        "fit_rule": "slip/guess fitted on stacked dataset [first; full]",
     }
     with open(out / "summary.json", "w") as f:
         json.dump(summary, f, indent=2)
@@ -484,7 +454,7 @@ def main():
     print("  - item_params.json (slip/guess)")
     print("  - alpha_current.csv / alpha_future.csv")
     print("  - summary.json")
-    print("  - R_first.npy / R_full.npy")
+    print("  - R_first.npy / R_full.npy / R_fit.npy")
 
 
 if __name__ == "__main__":

@@ -38,17 +38,27 @@ def generate_data(
     data_path = Path(data_dir)
     
     # スキル状態データを読み込み
+    # skill_states_first.csv / skill_states_second.csv または alpha_current.csv / alpha_future.csv を探す
     skill_states_first_path = data_path / 'skill_states_first.csv'
     skill_states_second_path = data_path / 'skill_states_second.csv'
+    alpha_current_path = data_path / 'alpha_current.csv'
+    alpha_future_path = data_path / 'alpha_future.csv'
     
-    if not skill_states_first_path.exists():
-        raise FileNotFoundError(f"前半データが見つかりません: {skill_states_first_path}")
-    if not skill_states_second_path.exists():
-        raise FileNotFoundError(f"後半データが見つかりません: {skill_states_second_path}")
-    
-    # CSVからスキル状態を読み込み
-    df_first = pd.read_csv(skill_states_first_path)
-    df_second = pd.read_csv(skill_states_second_path)
+    # ファイルの存在確認と読み込み
+    if skill_states_first_path.exists() and skill_states_second_path.exists():
+        df_first = pd.read_csv(skill_states_first_path)
+        df_second = pd.read_csv(skill_states_second_path)
+        print(f"データ読み込み: skill_states_first.csv, skill_states_second.csv")
+    elif alpha_current_path.exists() and alpha_future_path.exists():
+        df_first = pd.read_csv(alpha_current_path)
+        df_second = pd.read_csv(alpha_future_path)
+        print(f"データ読み込み: alpha_current.csv, alpha_future.csv")
+    else:
+        raise FileNotFoundError(
+            f"スキル状態データが見つかりません。以下のいずれかのペアが必要です:\n"
+            f"  - {skill_states_first_path} と {skill_states_second_path}\n"
+            f"  - {alpha_current_path} と {alpha_future_path}"
+        )
     
     # user_id列を除いてスキル状態のみ抽出
     skill_cols = [col for col in df_first.columns if col.startswith('skill_')]
