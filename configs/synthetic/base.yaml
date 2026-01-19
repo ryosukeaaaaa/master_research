@@ -1,7 +1,7 @@
 # configs/base.yaml
 seeds: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
 device: auto
-results_folder: outputs/synthetic/results/
+results_folder: outputs/synthetic/modify_alpha_beta/results/
 
 # --- 手法（NN/ルール を全部ここへ） ---
 methods:

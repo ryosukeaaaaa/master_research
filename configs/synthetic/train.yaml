@@ -10,6 +10,6 @@ recipe:
     lambda: 0.001
 
 training_cfg:
-  save_folder: outputs/synthetic/models/
+  save_folder: outputs/synthetic/modify_alpha_beta/models/
   save_best_only: true
   checkpoint_freq: 100

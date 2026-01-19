@@ -325,8 +325,10 @@ def create_visualizations(all_results, output_dir):
 if __name__ == "__main__":
     from load_results import load_all_results
     
-    RESULTS_DIR = "outputs/synthetic/results"
-    OUT_DIR = "analysis/synthetic/parameter_analysis"
+    RESULTS_DIR = "outputs/synthetic/modify_alpha_beta/results"
+    OUT_DIR = "analysis/synthetic/modify_alpha_beta/parameter_analysis"
+    # RESULTS_DIR = "outputs/synthetic/results"
+    # OUT_DIR = "analysis/synthetic/parameter_analysis"
     METRICS = ["kl", "hd", "jsd", "acc", "ace", "spa", "mse"]
     
     print("="*60)

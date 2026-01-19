@@ -5,8 +5,10 @@ from wilcoxon_test import wilcoxon_per_experiment, significant_ratio
 import pandas as pd
 from pathlib import Path
 
-RESULTS_DIR = "outputs/synthetic/results"
-OUT_DIR = "analysis/synthetic/results"
+# RESULTS_DIR = "outputs/synthetic/results"
+# OUT_DIR = "analysis/synthetic/results"
+RESULTS_DIR = "outputs/synthetic/modify_alpha_beta/results"
+OUT_DIR = "analysis/synthetic/modify_alpha_beta/results"
 
 METRICS = ["kl", "hd", "jsd", "acc", "ace", "spa", "mse"]
 

@@ -6,9 +6,13 @@ python3 -m scripts.synthetic.run_experiment
 ```
 2. 結果分析
 ```
+python3 analysis/synthetic/run_analysis.py
+```
+3. パラメータ分析
+```
 python3 analysis/synthetic/parameter_analysis.py
 ```
-3. 結果表示
+4. 結果表示
 数値結果：synthetic_results_analysis.ipynb
 パラメータ分析：parameter_analysis.ipynb
 パラメータ全体分析：comprehensive_metric_analysis.ipynb
